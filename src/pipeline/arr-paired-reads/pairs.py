@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     for chrom, pos1, pos2 in bam.pair_generator():
         i += 1
-        print(f"{chrom}\t{pos1}\t{pos2}")
+        print(f"{chrom}\t{pos1}\t{pos2}\t{(pos1+pos2)//2}")
 
         if i % 10000 == 0:
             print(f"Progress: {i} pairs...", file=sys.stderr)
