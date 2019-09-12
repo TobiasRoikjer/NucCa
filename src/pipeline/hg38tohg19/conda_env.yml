@@ -1,0 +1,51 @@
+name: hg38tohg19
+channels:
+  - genomedk
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bx-python=0.8.4=py37hebb334c_0
+  - crossmap=0.3.7=pyh5ca1d4c_2
+  - libdeflate=1.0=h14c3975_1
+  - mysql-connector-c=6.1.6=2
+  - pybigwig=0.3.17=py37hc013797_0
+  - pysam=0.15.3=py37hda2845c_1
+  - ucsc-wigtobigwig=357=1
+  - bzip2=1.0.8=h516909a_1
+  - ca-certificates=2019.9.11=hecc5488_0
+  - certifi=2019.9.11=py37_0
+  - curl=7.65.3=hf8cf82a_0
+  - cython=0.29.13=py37he1b5a44_0
+  - krb5=1.16.3=h05b26f9_1001
+  - libblas=3.8.0=12_openblas
+  - libcblas=3.8.0=12_openblas
+  - libcurl=7.65.3=hda55be3_0
+  - libedit=3.1.20170329=hf8c457e_1001
+  - libffi=3.2.1=he1b5a44_1006
+  - libgcc=7.2.0=h69d50b8_2
+  - liblapack=3.8.0=12_openblas
+  - libopenblas=0.3.7=h6e990d7_1
+  - libpng=1.6.37=hed695b0_0
+  - libssh2=1.8.2=h22169c7_2
+  - libuuid=2.32.1=h14c3975_1000
+  - lzo=2.10=h14c3975_1000
+  - ncurses=6.1=hf484d3e_1002
+  - numpy=1.17.2=py37h95a1406_0
+  - openssl=1.1.1c=h516909a_0
+  - pip=19.2.3=py37_0
+  - python=3.7.3=h33d41f4_1
+  - python-lzo=1.12=py37hb300a8c_1000
+  - readline=8.0=hf8c457e_0
+  - setuptools=41.2.0=py37_0
+  - six=1.12.0=py37_1000
+  - sqlite=3.29.0=hcee41ef_1
+  - tk=8.6.9=hed695b0_1003
+  - wheel=0.33.6=py37_0
+  - xz=5.2.4=h14c3975_1001
+  - zlib=1.2.11=h516909a_1006
+  - _libgcc_mutex=0.1=main
+  - libgcc-ng=9.1.0=hdf63c60_0
+  - libgfortran-ng=7.3.0=hdf63c60_0
+  - libstdcxx-ng=9.1.0=hdf63c60_0
+prefix: /home/tobias/miniconda3/envs/hg38tohg19
