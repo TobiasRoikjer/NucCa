@@ -1,0 +1,292 @@
+---
+title: "analysis"
+author: "Tobias Røikjer"
+date: "September 4, 2019"
+output: html_document
+---
+
+```{r}
+library("tidyverse")
+library("scales")
+library("readxl")
+
+ROOT_DIR <- "./"
+DATA_DIR <- file.path(ROOT_DIR, "data")
+NUCLEOSOME_DATA_DIR <- file.path(DATA_DIR, "nucleosome")
+
+CHROMOSOMES <- factor(c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chrX", "chrY"))
+
+```
+
+```{r}
+nucleosome_files <- list.files(NUCLEOSOME_DATA_DIR, pattern = "\\.bed$", full.names = T)
+nucleosome_meta_file <- file.path(NUCLEOSOME_DATA_DIR, "metaSamples_Homo_sapiens.xlsx")
+```
+
+```{r}
+parse_nucleosome_meta_file <- function(file) {
+  read_excel(file)
+}
+
+parse_nucleosome_file <- function(file, progress = F) {
+  read_delim(file = file,
+             delim = "\t",
+             progress = progress,
+             col_names = c("chrom", "start",
+                           "stop", "id"),
+             col_types = c("chrom" = col_character(),
+                           "start" = col_integer(),
+                           "stop" = col_integer(),
+                           "id" = "_")) %>%
+    mutate(chrom = factor(chrom,
+                          levels = CHROMOSOMES)) %>%
+    na.omit()
+}
+
+load_nucleosome_files <- function(files, progress = T) {
+  print(paste("Loading nucleosome files:", length(files), "files"))
+
+  apply(rbind(files, seq(length(files))), 2, function(entry) {
+    print(paste("Loading file:", entry[2], "/", length(files), "..."))
+    
+    parse_nucleosome_file(entry[1], progress)
+  })
+}
+```
+
+```{r}
+nucleosome_meta_df <- parse_nucleosome_meta_file(nucleosome_meta_file)
+
+nucleosome_df_meta_data <- function(file) {
+  filename <- last(last(strsplit(file, "/")))
+  sample.id <- last(strsplit(filename, ".", fixed = T))[[2]]
+  
+  nucleosome_meta_df %>%
+    filter(sampleID == sample.id) %>%
+    as.vector()
+}
+```
+
+```{r}
+plot_nucleosome_repeat_length <- function(df, title='', filetitle='') {
+  df %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(mid = (stop + start)/2) %>%
+  mutate(space = mid - lag(mid)) %>%
+  filter(space < 1500) %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+    scale_x_continuous(breaks = seq(0, 1500, by = 200), minor_breaks = seq(0, 1500, by = 50)) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2])) +
+  labs(title = paste("Nucleosome midpoint space, data:", title, "(", filetitle, ")")) +
+    ggsave(paste0("out/nuc_repeat_length", filetitle, ".png"), width = 20, height = 10, units = "cm")
+  
+  df %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(mid = (stop + start)/2) %>%
+  mutate(space = mid - lag(mid)) %>%
+  filter(space < 400) %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+    scale_x_continuous(breaks = seq(0, 400, by = 100), minor_breaks = seq(0, 400, by = 20)) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2])) +
+  labs(title = paste("Nucleosome midpoint space, data:", title, "(", filetitle, ")")) +
+    ggsave(paste0("out/nuc_repeat_length_small", filetitle, ".png"), width = 20, height = 10, units = "cm")
+}
+
+plot_nucleosome_position_dist <- function(df, title='', filetitle='') {
+  df %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(mid = (stop + start)/2) %>%
+  mutate(interval = cut_interval(mid, length = 10^7)) %>%
+  group_by(interval, chrom) %>%
+  summarise(n()) %>%
+  ggplot(aes(interval, `n()`)) +
+  geom_col() +
+  facet_wrap(vars(chrom)) +
+  labs(title = paste("Nucleosome position distribution, data:", title, "(", filetitle, ")")) +
+    ggsave(paste0("out/nuc_pos_dist", filetitle, ".png"), width = 40, height = 40, units = "cm")
+}
+```
+
+```{r}
+for (i in 1:(length(nucleosome_files))) {
+  df <- parse_nucleosome_file(nucleosome_files[i], progress = T)
+  plot_nucleosome_repeat_length(df, title=nucleosome_df_meta_data(nucleosome_files[[i]])$sampleDescription, filetitle=nucleosome_df_meta_data(nucleosome_files[[i]])$sampleID)
+  
+  plot_nucleosome_position_dist(df, title=nucleosome_df_meta_data(nucleosome_files[[i]])$sampleDescription, filetitle=nucleosome_df_meta_data(nucleosome_files[[i]])$sampleID)
+}
+```
+
+```{r}
+t <- load_nucleosome_files(nucleosome_files, T)
+dfs <- bind_rows(t)
+
+e <- dfs %>%
+  mutate(mid = (stop + start)/2) %>%
+  select(chrom, mid) %>%
+  group_by(chrom, mid) %>%
+  summarise(n()) %>%
+  select(chrom, mid)
+
+e %>%
+  group_by(chrom) %>%
+  arrange(mid) %>%
+  mutate(space = mid - lag(mid)) %>%
+  filter(space < 750) %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2]))
+```
+
+```{r}
+plot_nucleosome_repeat_length(t,
+                                title = nucleosome_df_meta_data(nucleosome_files[[1]])$sampleDescription)
+```
+
+```{r}
+plot_nucleosome_repeat_length(t[[8]],
+                              title = nucleosome_df_meta_data(nucleosome_files[[8]])$sampleDescription)
+```
+
+```{r}
+t2 %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(space = start - lag(stop)) %>%
+  filter(space < 750) %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2]))
+
+t2 %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(mid = (stop + start)/2) %>%
+  mutate(space = mid - lag(mid)) %>%
+  filter(space < 750) %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2]))
+```
+
+
+```{r}
+rbind(t[[1]], t[[8]]) %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(mid = (stop + start)/2) %>%
+  select(chrom, mid) %>%
+  mutate(space = mid - lag(mid)) %>%
+  filter(space < 750) %>%
+  filter(space > 0) %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2]))
+
+```
+
+
+```{r}
+dfs <- bind_rows(t)
+
+v <- dfs %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(mid = (stop + start)/2) %>%
+  select(chrom, mid) %>%
+  mutate(space = mid - lag(mid)) %>%
+  filter(space < 200) %>%
+  filter(space > 0)
+
+v %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2]))
+
+```
+
+```{r}
+e <- v %>%
+  filter(chrom == "chr1")
+
+e2 <- e %>%
+  filter(mid > 168899410 - 10^3) %>%
+  filter(mid < 168899410 + 10^3)
+```
+
+```{r}
+t %>%
+  mutate(mid = (start + stop)/2) %>%
+  mutate(interval = cut_interval(mid, length = 10^7)) %>%
+  group_by(interval, chrom) %>%
+  summarise(n()) %>%
+  ggplot(aes(interval, `n()`)) +
+  geom_col() +
+  facet_wrap(vars(chrom)) +
+    ggsave(paste0("out/nuc_dist", title, ".png"), width = 20, height = 10, units = "cm")
+```
+
+```{r}
+e2 %>%
+  mutate(interval = cut_interval(mid, length = 10^2)) %>%
+  group_by(interval) %>%
+  summarise(n()) %>%
+  ggplot(aes(interval, `n()`)) +
+  geom_col()
+```
+
+```{r}
+nucleosome_df_meta_data(nucleosome_files[1])
+```
+
+```{r}
+t %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(space = start - lag(stop)) %>%
+  filter(space < 750) %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2]))
+
+t %>%
+  group_by(chrom) %>%
+  arrange(start) %>%
+  mutate(mid = (stop + start)/2) %>%
+  mutate(space = mid - lag(mid)) %>%
+  filter(space < 750) %>%
+ggplot() +
+  geom_density(aes(space, y=..scaled.., color=factor(ifelse(chrom=="chrX", "chrX", ifelse(chrom=="chrY", "chrY", "autosome"))), group=chrom)) +
+  labs(color = "Chromosome") +
+  theme_bw() +
+  geom_hline(color = "white", yintercept = 0) +
+  scale_color_manual(values = c("autosome" = "gray50", "chrX" = hue_pal()(2)[1], "chrY" = hue_pal()(2)[2]))
+```
