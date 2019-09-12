@@ -34,4 +34,4 @@ class BAM:
                 del mem[query_name]
                 #i -= 1
 
-                yield f"chr{read.reference_name}", min(read.pos, mem_pos), max(read.pos, mem_pos)
+                yield read.reference_name, min(read.pos, mem_pos), max(read.pos, mem_pos)
