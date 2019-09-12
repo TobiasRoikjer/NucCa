@@ -1,9 +1,14 @@
 import pysam
 import os
+import sys
 
 class BAM:
     def __init__(self, filename):
-        if not os.path.exists(filename + ".bai"):
+        bai_filename = f"{filename}.bai"
+
+        if not os.path.exists(bai_filename):
+            print(f"No index file found ({bai_filename}), generating...",
+                  file=sys.stderr)
             pysam.index(filename)
 
         self.bam_file = pysam.AlignmentFile(filename, 'rb')
