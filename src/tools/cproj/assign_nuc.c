@@ -107,12 +107,12 @@ void retrieve_data(FILE *reads, FILE *nucs, char *delimiter) {
                 data[dist][length]++;
             }
 
-            printf("%s\t%ld\t%ld\t%ld\tdist: %ld\n",
+            /*printf("%s\t%ld\t%ld\t%ld\tdist: %ld\n",
                     fragment[COL_CHR],
                     atol(fragment[COL_POS1]),
                     atol(fragment[COL_POS2]),
                     atol(fragment[COL_MID]),
-                    dist);
+                    dist);*/
         }
     }
 }
