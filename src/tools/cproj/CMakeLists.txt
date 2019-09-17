@@ -1,6 +1,7 @@
 # cmake_minimum_required(VERSION <specify CMake version here>)
 project(cproj C)
 
+SET(CMAKE_C_FLAGS "-std=c11 ${CMAKE_C_FLAGS}")
 set(CMAKE_C_STANDARD 11)
 
 add_executable(cproj main.c ds.h)

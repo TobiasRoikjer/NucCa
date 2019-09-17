@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
+#include <sys/types.h>
 
 #include "utils.h"
 #include "ds.h"

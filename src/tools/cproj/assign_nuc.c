@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "utils.h"
 #include "file.h"
@@ -14,7 +15,7 @@
 #define COL_POS2 2
 #define COL_MID 3
 
-unsigned long data[MAX_DIST][MAX_LENGTH] = {0};
+unsigned long data[MAX_DIST*2][MAX_LENGTH] = {0};
 
 void retrieve_data(FILE *reads, FILE *nucs, char *delimiter) {
     /* Algorithm:
@@ -89,22 +90,25 @@ void retrieve_data(FILE *reads, FILE *nucs, char *delimiter) {
         }
 
         long dist = -1;
+	bool set = false;
 
         if (nuc_chrom_low != NULL && strcmp(read_chrom, nuc_chrom_low) == 0) {
-            dist = labs(read_midpoint - nuc_midpoint_low);
+            dist = read_midpoint - nuc_midpoint_low;
+	    set = true;
         }
 
         if (nuc_chrom_high != NULL && strcmp(read_chrom, nuc_chrom_high) == 0) {
-            long high_dist = labs(read_midpoint - nuc_midpoint_high);
+            long high_dist = read_midpoint - nuc_midpoint_high;
 
-            dist = dist == -1 || high_dist < dist ? high_dist : dist;
+            dist = set == false || labs(high_dist) < labs(dist) ? high_dist : dist;
+	    set = true;
         }
 
-        if (dist != -1) {
+        if (set) {
             long length = labs(atol(fragment[COL_POS1]) - atol(fragment[COL_POS2]));
 
-            if (dist < MAX_DIST && length < MAX_LENGTH) {
-                data[dist][length]++;
+            if (labs(dist) < MAX_DIST && length < MAX_LENGTH) {
+                data[dist+MAX_DIST][length]++;
             }
 
             /*printf("%s\t%ld\t%ld\t%ld\tdist: %ld\n",
@@ -118,10 +122,10 @@ void retrieve_data(FILE *reads, FILE *nucs, char *delimiter) {
 }
 
 void print_data(FILE *out) {
-    for (size_t d = 0; d < MAX_DIST; d++) {
+    for (size_t d = 0; d < MAX_DIST*2; d++) {
         for (size_t l = 0; l < MAX_LENGTH; l++) {
             if (data[d][l] != 0) {
-                fprintf(out, "%lu\t%zu\t%zu\n", data[d][l], d, l);
+                fprintf(out, "%lu\t%zu\t%zu\n", data[d][l], d-MAX_DIST, l);
             }
         }
     }
@@ -134,6 +138,8 @@ int main(int argc, char **argv) {
     }
 
     fprintf(stderr, "Start assign nucleosome midpoints\n");
+
+    fprintf(stderr, "Max dist %zu, max length %zu\n", MAX_DIST, MAX_LENGTH);
 
     FILE *reads = fopen(argv[1], "r");
 
