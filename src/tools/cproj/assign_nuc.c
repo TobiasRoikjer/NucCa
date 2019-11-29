@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 
     fprintf(stderr, "Start assign nucleosome midpoints\n");
 
-    fprintf(stderr, "Max dist %zu, max length %zu\n", MAX_DIST, MAX_LENGTH);
+    fprintf(stderr, "Max dist %zu, max length %zu\n", (size_t)MAX_DIST, (size_t)MAX_LENGTH);
 
     FILE *reads = fopen(argv[1], "r");
 
