@@ -18,5 +18,5 @@ if __name__ == "__main__":
         i += 1
         print(f"{chrom}\t{pos1}\t{pos2}\t{(pos1+pos2)//2}")
 
-        if i % 10000 == 0:
+        if i % 1000000 == 0:
             print(f"Progress: {i} pairs...", file=sys.stderr)
