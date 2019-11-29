@@ -9,3 +9,5 @@ Chr1	5	55  30
 Chr1	16	60  38
 Chr2	55	200 127
 ChrX	45	60  52
+
+Usage: python3 pair_all.py <reads-dir> <output-dir>
