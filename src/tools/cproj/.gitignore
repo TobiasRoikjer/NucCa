@@ -1,2 +1,14 @@
 .idea
 cmake-build-debug
+
+CMakeFiles
+CMakeCache
+CMakeCache.txt
+Makefile
+assign_nuc
+cmake_install.cmake
+cproj
+cproj.cbp
+nuc_fletch
+uniq_line
+list_nuc_dist
